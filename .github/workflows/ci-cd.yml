@@ -1,0 +1,44 @@
+name: CI/CD - Validacion Nginx y PHP
+
+on:
+  push:
+    branches: [ main, 'hu-**' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-test:
+    name: 1. Validacion de Sintaxis PHP
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Comprobar sintaxis PHP
+        run: find src/ -type f -name "*.php" -exec php -l {} \;
+
+  build-docker:
+    name: 2. Build de Imagen Docker
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Construir imagen Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: nginx-php-app:test
